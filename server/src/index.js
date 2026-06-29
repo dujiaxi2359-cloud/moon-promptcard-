@@ -48,6 +48,42 @@ app.get('/api/health', (_req, res) =>
   res.json({ ok: true, llm: llmConfigured(), image: imageConfigured() }),
 );
 
+// 落地页（给支付渠道审核用，体现真实业务内容）
+app.get('/', (_req, res) => {
+  res
+    .type('html')
+    .send(`<!doctype html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Moon PromptCard · 提示词分析与图片助手</title>
+<style>
+body{margin:0;background:#0B0C0E;color:#EAE6DD;font-family:system-ui,-apple-system,"PingFang SC",sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{max-width:760px;margin:0 auto;padding:64px 24px}
+.eyebrow{letter-spacing:.18em;font-size:12px;color:#FF5A1F;font-weight:600}
+h1{font-size:34px;margin:8px 0 12px}
+p{line-height:1.8;color:rgba(234,230,221,.72)}
+.card{background:#15161A;border:1px solid rgba(234,230,221,.1);border-radius:16px;padding:20px;margin-top:20px}
+.card h2{font-size:16px;margin:0 0 8px}
+a{color:#FF6B33}
+.tiers{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px}
+.tier{flex:1;min-width:120px;background:#101114;border:1px solid rgba(234,230,221,.1);border-radius:12px;padding:14px;text-align:center}
+.tier b{font-size:22px}
+.foot{margin-top:28px;font-size:12px;color:rgba(234,230,221,.4)}
+</style></head><body><div class="wrap">
+<div class="eyebrow">MOON PROMPTCARD</div>
+<h1>提示词分析与图片助手</h1>
+<p>Moon PromptCard 是一款浏览器扩展，帮助 AIGC 创作者对提示词进行评分、问题诊断与一键优化，并支持把图片转成提示词、按需生成图片。本站为其提供后端分析与充值服务。</p>
+<div class="card"><h2>功能</h2><p>提示词评分与优化 · 图片转提示词 · 文生图 / 图生图 · 多模型适配（Veo、Sora、Kling、Midjourney、SD 等）。</p></div>
+<div class="card"><h2>充值次数（永久有效）</h2>
+<div class="tiers">
+<div class="tier"><b>50</b><div>¥5</div></div>
+<div class="tier"><b>120</b><div>¥10</div></div>
+<div class="tier"><b>300</b><div>¥20</div></div>
+</div></div>
+<div class="card"><h2>隐私</h2><p>仅在用户主动操作时读取所选文本/图片；自定义模式下数据只发往用户自配接口。详见 <a href="https://github.com/dujiaxi2359-cloud/moon-promptcard-/blob/main/moon-promptcard/PRIVACY.md">隐私政策</a>。</p></div>
+<p class="foot">联系：dujiaxi2359@gmail.com · © Moon PromptCard</p>
+</div></body></html>`);
+});
+
 // ── auth ──────────────────────────────────────────────────────────────
 app.post('/api/auth/request', wrap(requestCode));
 app.post('/api/auth/verify', wrap(verifyCode));
