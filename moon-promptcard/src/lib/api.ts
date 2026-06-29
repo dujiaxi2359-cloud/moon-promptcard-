@@ -20,7 +20,7 @@ import { buildAnalysisMessages, heuristicAnalyze } from './promptAnalyzer';
 // First-party backend (holds the official 千问 key, does analysis + image→prompt).
 // Dev default: the local reference server. Point this at your deployed host for
 // production. When blank, the builtin service falls back to the local mock.
-export const BUILTIN_API_BASE_URL = 'http://localhost:8787';
+export const BUILTIN_API_BASE_URL = 'https://moon-promptcard-server.onrender.com';
 const USE_MOCK_BUILTIN = false;
 
 class FriendlyError extends Error {}

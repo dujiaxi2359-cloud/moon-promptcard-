@@ -64,7 +64,9 @@ export const config = {
     jwtSecret: env.JWT_SECRET || 'dev-insecure-secret-change-me',
   },
   mail: {
-    smtpUrl: env.SMTP_URL || '', // e.g. smtps://user:pass@smtp.host:465
+    // Brevo HTTP API (recommended on Render — SMTP ports are blocked there).
+    brevoKey: env.BREVO_API_KEY || '',
+    smtpUrl: env.SMTP_URL || '', // e.g. smtps://user:pass@smtp.host:465 (won't work on Render)
     from: env.MAIL_FROM || 'Moon PromptCard <no-reply@example.com>',
   },
   isDev: (env.NODE_ENV || 'development') !== 'production',
@@ -76,4 +78,4 @@ export const imageConfigured = () => Boolean(config.image.baseUrl && config.imag
 export const llmModelFor = (hasImage) =>
   hasImage ? config.llm.visionModel : config.llm.textModel;
 export const dbEnabled = () => Boolean(config.db.url);
-export const mailEnabled = () => Boolean(config.mail.smtpUrl);
+export const mailEnabled = () => Boolean(config.mail.brevoKey || config.mail.smtpUrl);
