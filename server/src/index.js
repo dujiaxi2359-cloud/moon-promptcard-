@@ -27,7 +27,7 @@ import { TIERS } from './config.js';
 import { createPayment, verifyNotify } from './billing.js';
 
 const app = express();
-app.use(express.json({ limit: '256kb' }));
+app.use(express.json({ limit: '12mb' })); // images are sent as base64 data URLs
 
 app.use(
   cors({

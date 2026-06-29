@@ -26,7 +26,8 @@ const USE_MOCK_BUILTIN = false;
 // Google OAuth Web client ID (fill after creating it in Google Cloud Console).
 // Authorized redirect URI must be chrome.identity.getRedirectURL() of the
 // extension, i.e. https://<extension-id>.chromiumapp.org/
-export const GOOGLE_CLIENT_ID = '';
+export const GOOGLE_CLIENT_ID =
+  '953512361686-rmec8r96jokkupi74i9kn2vkio3o6tbq.apps.googleusercontent.com';
 
 class FriendlyError extends Error {}
 

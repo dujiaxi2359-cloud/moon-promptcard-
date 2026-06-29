@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AnalysisResult, CustomApiConfig, ImagePrompt, ServiceMode, Settings } from '@/lib/types';
 import { getLastResult, getSettings, saveSettings } from '@/lib/storage';
-import { GOOGLE_CLIENT_ID } from '@/lib/api';
 import { t } from '@/lib/i18n';
 import { Button, IconButton, LoadingDots, SegmentToggle, Spinner, StateBlock } from '@/components/ui';
 import { ResultBody } from '@/components/ResultBody';
@@ -463,40 +462,23 @@ function LoginPanel({
   };
 
   const googleLogin = () => {
-    if (!GOOGLE_CLIENT_ID) {
-      showToast(zh ? '尚未配置 Google 登录' : 'Google login not configured');
-      return;
-    }
-    const redirect = chrome.identity.getRedirectURL();
-    const url =
-      'https://accounts.google.com/o/oauth2/v2/auth?client_id=' +
-      encodeURIComponent(GOOGLE_CLIENT_ID) +
-      '&response_type=token&redirect_uri=' +
-      encodeURIComponent(redirect) +
-      '&scope=' +
-      encodeURIComponent('openid email profile') +
-      '&prompt=select_account';
     setBusy(true);
-    chrome.identity.launchWebAuthFlow({ url, interactive: true }, (redirectedTo) => {
-      if (chrome.runtime.lastError || !redirectedTo) {
+    // Chrome-extension OAuth client: token comes via getAuthToken (no redirect URI).
+    chrome.identity.getAuthToken({ interactive: true }, (token) => {
+      const accessToken = typeof token === 'string' ? token : (token as any)?.token;
+      if (chrome.runtime.lastError || !accessToken) {
         setBusy(false);
-        showToast(zh ? 'Google 登录已取消' : 'Google sign-in cancelled');
+        showToast(
+          (zh ? 'Google 登录失败：' : 'Google sign-in failed: ') +
+            (chrome.runtime.lastError?.message ?? ''),
+        );
         return;
       }
-      const m = redirectedTo.match(/[#&]access_token=([^&]+)/);
-      if (!m) {
+      chrome.runtime.sendMessage({ type: 'AUTH_GOOGLE', accessToken }, (r) => {
         setBusy(false);
-        showToast(zh ? '未获取到 Google 令牌' : 'No Google token');
-        return;
-      }
-      chrome.runtime.sendMessage(
-        { type: 'AUTH_GOOGLE', accessToken: decodeURIComponent(m[1]) },
-        (r) => {
-          setBusy(false);
-          if (r?.ok) onAuthed();
-          else showToast(r?.error ?? (zh ? '登录失败' : 'Failed'));
-        },
-      );
+        if (r?.ok) onAuthed();
+        else showToast(r?.error ?? (zh ? '登录失败' : 'Failed'));
+      });
     });
   };
 

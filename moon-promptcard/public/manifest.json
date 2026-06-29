@@ -32,6 +32,10 @@
     }
   ],
   "permissions": ["storage", "activeTab", "scripting", "contextMenus", "identity"],
+  "oauth2": {
+    "client_id": "953512361686-rmec8r96jokkupi74i9kn2vkio3o6tbq.apps.googleusercontent.com",
+    "scopes": ["openid", "email", "profile"]
+  },
   "host_permissions": ["http://*/*", "https://*/*"],
   "web_accessible_resources": [
     {
