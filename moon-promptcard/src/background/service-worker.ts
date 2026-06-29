@@ -6,6 +6,7 @@
 
 import {
   builtinAnalyze,
+  builtinCheckout,
   builtinCheckoutUrl,
   builtinDescribeImage,
   builtinGoogleLogin,
@@ -192,6 +193,16 @@ chrome.runtime.onMessage.addListener((message: RuntimeMessage, _sender, sendResp
       case 'OPEN_CHECKOUT':
         chrome.tabs.create({ url: builtinCheckoutUrl() });
         sendResponse({ ok: true });
+        break;
+      case 'CHECKOUT':
+        try {
+          const s = await getSettings();
+          const { url } = await builtinCheckout(message.tier, s.builtin.token);
+          chrome.tabs.create({ url });
+          sendResponse({ ok: true });
+        } catch (e) {
+          sendResponse({ ok: false, error: errMsg(e) });
+        }
         break;
       default:
         sendResponse({ ok: false, error: 'unknown message' });

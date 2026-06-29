@@ -21,8 +21,10 @@ import { requestCode, verifyCode, logout } from './auth.js';
 import { bearer } from './middleware.js';
 import { analyze, describeImage } from './analyze.js';
 import { generateImages } from './image.js';
-import { initDb, decrementQuota, getOrCreateUser } from './db.js';
+import { initDb, decrementQuota, getOrCreateUser, createOrder, markOrderPaidOnce } from './db.js';
 import { signToken } from './token.js';
+import { TIERS } from './config.js';
+import { createPayment, verifyNotify } from './billing.js';
 
 const app = express();
 app.use(express.json({ limit: '256kb' }));
@@ -144,11 +146,47 @@ app.post(
   }),
 );
 
-// ── billing (placeholder) ─────────────────────────────────────────────
+// ── billing (虎皮椒 聚合支付) ──────────────────────────────────────────
+app.get(
+  '/api/billing/tiers',
+  wrap((_req, res) =>
+    res.json({
+      ok: true,
+      tiers: Object.entries(TIERS).map(([key, t]) => ({
+        key,
+        credits: t.credits,
+        price: t.price,
+        label: t.label,
+        badge: t.badge ?? null,
+      })),
+    }),
+  ),
+);
+
 app.post(
   '/api/billing/checkout',
   bearer(),
-  wrap((req, res) => res.json({ ok: true, url: config.checkoutUrl })),
+  wrap(async (req, res) => {
+    const tier = String(req.body?.tier || '');
+    const { tradeOrderId, url, credits } = await createPayment(tier);
+    await createOrder(tradeOrderId, req.email, credits);
+    res.json({ ok: true, url, tradeOrderId });
+  }),
+);
+
+// 支付回调（虎皮椒服务器异步通知，无需登录）
+app.post(
+  '/api/billing/notify',
+  express.urlencoded({ extended: false }),
+  wrap(async (req, res) => {
+    const body = req.body || {};
+    if (!verifyNotify(body)) return res.status(400).send('sign error');
+    const status = String(body.status || '').toUpperCase();
+    if (status === 'OD' && body.trade_order_id) {
+      await markOrderPaidOnce(String(body.trade_order_id)); // 幂等加次数
+    }
+    res.send('success');
+  }),
 );
 
 app.use((_req, res) => res.status(404).json({ ok: false, error: 'not found' }));

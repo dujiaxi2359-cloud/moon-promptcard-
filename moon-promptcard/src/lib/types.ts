@@ -88,6 +88,7 @@ export type RuntimeMessage =
   | { type: 'GET_QUOTA' }
   | { type: 'GET_ME' }
   | { type: 'OPEN_CHECKOUT' }
+  | { type: 'CHECKOUT'; tier: string }
   | { type: 'OPEN_LATEST_RESULT' }
   | { type: 'TOGGLE_FLOATING'; enabled: boolean }
   | { type: 'PING' };

@@ -530,6 +530,19 @@ export async function builtinMe(token: string | null): Promise<{ account: string
   return { account: d.account };
 }
 
+export async function builtinCheckout(
+  tier: string,
+  token: string | null,
+): Promise<{ url: string }> {
+  if (!token) friendly('请先登录。');
+  const d = await builtinJson('/api/billing/checkout', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
+    body: JSON.stringify({ tier }),
+  });
+  return { url: d.url };
+}
+
 export function builtinCheckoutUrl(): string {
   return BUILTIN_API_BASE_URL
     ? `${BUILTIN_API_BASE_URL}/api/billing/checkout`

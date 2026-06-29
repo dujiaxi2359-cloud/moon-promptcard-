@@ -21,7 +21,7 @@ import {
   SparkIcon,
 } from '@/components/icons';
 
-type View = 'home' | 'result' | 'generate' | 'extract';
+type View = 'home' | 'result' | 'generate' | 'extract' | 'buy';
 
 export function Popup() {
   const [settings, setSettings] = useState<Settings | null>(null);
@@ -80,8 +80,7 @@ export function Popup() {
     });
   };
 
-  const onBuy = () =>
-    showToast(lang === 'zh' ? '购买功能即将开放，敬请期待。' : 'Purchasing is coming soon.');
+  const onBuy = () => setView('buy');
 
   const uploadImage = (dataUrl: string) => {
     setView('extract');
@@ -132,6 +131,8 @@ export function Popup() {
             onRefresh={refresh}
             showToast={showToast}
           />
+        ) : view === 'buy' ? (
+          <BuyView lang={lang} onBack={() => setView('home')} onRefresh={refresh} showToast={showToast} />
         ) : view === 'generate' ? (
           <GenerateView lang={lang} config={settings.customApi} onBack={() => setView('home')} />
         ) : view === 'extract' ? (
@@ -825,6 +826,90 @@ function GenerateView({
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+const BUY_TIERS = [
+  { key: 't50', credits: 50, price: '¥5' },
+  { key: 't120', credits: 120, price: '¥10', badge: '入门' },
+  { key: 't300', credits: 300, price: '¥20', badge: '最划算' },
+];
+
+function BuyView({
+  lang,
+  onBack,
+  onRefresh,
+  showToast,
+}: {
+  lang: 'zh' | 'en';
+  onBack: () => void;
+  onRefresh: () => void;
+  showToast: (m: string) => void;
+}) {
+  const zh = lang === 'zh';
+  const [sel, setSel] = useState('t120');
+  const [busy, setBusy] = useState(false);
+  const tier = BUY_TIERS.find((t) => t.key === sel)!;
+
+  const buy = () => {
+    setBusy(true);
+    chrome.runtime.sendMessage({ type: 'CHECKOUT', tier: sel }, (r) => {
+      setBusy(false);
+      if (r?.ok) showToast(zh ? '支付页已打开，付完点刷新' : 'Payment opened, refresh after paying');
+      else showToast(r?.error ?? (zh ? '下单失败' : 'Failed'));
+    });
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <button onClick={onBack} className="flex items-center gap-1 text-[12px] text-paper/50 hover:text-paper/80">
+          <ChevronDownIcon className="rotate-90" /> {zh ? '购买次数' : 'Buy credits'}
+        </button>
+        <span className="rounded-md bg-brand/15 px-2 py-0.5 text-[11px] font-medium text-brand">
+          {zh ? '永久有效' : 'Never expires'}
+        </span>
+      </div>
+
+      <div className="grid grid-cols-3 gap-2">
+        {BUY_TIERS.map((t) => {
+          const active = t.key === sel;
+          return (
+            <button
+              key={t.key}
+              onClick={() => setSel(t.key)}
+              className={`relative flex flex-col items-center rounded-2xl border p-3 transition ${
+                active
+                  ? 'border-brand bg-brand/10 text-paper'
+                  : 'border-line bg-white/[0.03] text-paper/70 hover:border-line-strong'
+              }`}
+            >
+              {t.badge && (
+                <span className="absolute -top-2 rounded-md bg-brand px-1.5 py-0.5 text-[9px] font-semibold text-white">
+                  {t.badge}
+                </span>
+              )}
+              <span className="text-[20px] font-bold leading-none tabular-nums">{t.credits}</span>
+              <span className="mt-1 text-[12px] text-paper/55">{t.price}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      <Button variant="primary" className="h-[50px] w-full text-[15px]" onClick={buy} disabled={busy}>
+        {busy ? <Spinner className="border-[#15161A]/30 border-t-[#15161A]" /> : null}
+        {zh ? `购买 ${tier.credits} 次（${tier.price}）` : `Buy ${tier.credits} (${tier.price})`}
+      </Button>
+
+      <p className="px-1 text-[11px] leading-relaxed text-paper/35">
+        {zh
+          ? '微信 / 支付宝支付，次数永久有效。支付完成后回到这里点右上角刷新即可看到到账。'
+          : 'WeChat / Alipay. Credits never expire. Refresh after payment to see the balance.'}
+      </p>
+      <button onClick={onRefresh} className="mx-auto block text-[12px] text-brand hover:underline">
+        {zh ? '已支付，刷新次数' : 'Paid — refresh balance'}
+      </button>
     </div>
   );
 }

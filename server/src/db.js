@@ -25,6 +25,15 @@ export async function initDb() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
   `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS orders (
+      trade_order_id TEXT PRIMARY KEY,
+      email   TEXT NOT NULL,
+      credits INTEGER NOT NULL,
+      status  TEXT NOT NULL DEFAULT 'pending',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+  `);
   console.log('  存储: Postgres（已连接）');
 }
 
@@ -84,4 +93,48 @@ export async function addQuota(email, by) {
     [email, by],
   );
   return rows[0]?.remaining ?? 0;
+}
+
+// ---- orders ----
+const memOrders = new Map();
+
+export async function createOrder(tradeOrderId, email, credits) {
+  if (!pool) {
+    memOrders.set(tradeOrderId, { tradeOrderId, email, credits, status: 'pending' });
+    return;
+  }
+  await pool.query(
+    `INSERT INTO orders (trade_order_id, email, credits) VALUES ($1, $2, $3)
+     ON CONFLICT (trade_order_id) DO NOTHING`,
+    [tradeOrderId, email, credits],
+  );
+}
+
+export async function getOrder(tradeOrderId) {
+  if (!pool) return memOrders.get(tradeOrderId) || null;
+  const { rows } = await pool.query(
+    `SELECT trade_order_id, email, credits, status FROM orders WHERE trade_order_id = $1`,
+    [tradeOrderId],
+  );
+  const r = rows[0];
+  return r ? { tradeOrderId: r.trade_order_id, email: r.email, credits: r.credits, status: r.status } : null;
+}
+
+// Mark paid and credit quota exactly once. Returns true if it credited now.
+export async function markOrderPaidOnce(tradeOrderId) {
+  if (!pool) {
+    const o = memOrders.get(tradeOrderId);
+    if (!o || o.status === 'paid') return false;
+    o.status = 'paid';
+    await addQuota(o.email, o.credits);
+    return true;
+  }
+  const { rows } = await pool.query(
+    `UPDATE orders SET status = 'paid' WHERE trade_order_id = $1 AND status <> 'paid'
+     RETURNING email, credits`,
+    [tradeOrderId],
+  );
+  if (!rows[0]) return false;
+  await addQuota(rows[0].email, rows[0].credits);
+  return true;
 }

@@ -55,6 +55,14 @@ export const config = {
   },
   freeQuota: Number(env.FREE_QUOTA) || 5,
   checkoutUrl: env.CHECKOUT_URL || 'https://example.com/moon-promptcard/checkout',
+  // Public base URL of THIS backend, used to build the payment notify_url.
+  publicBaseUrl: (env.PUBLIC_BASE_URL || 'https://moon-promptcard-server.onrender.com').replace(/\/+$/, ''),
+  // 虎皮椒 (xunhupay) 聚合支付（个人可用，接微信/支付宝）
+  xunhu: {
+    appid: env.XUNHU_APPID || '',
+    appsecret: env.XUNHU_APPSECRET || '',
+    gateway: env.XUNHU_GATEWAY || 'https://api.xunhupay.com/payment/do.html',
+  },
   db: {
     // Postgres connection string (Render/Railway provide DATABASE_URL).
     url: env.DATABASE_URL || '',
@@ -79,3 +87,11 @@ export const llmModelFor = (hasImage) =>
   hasImage ? config.llm.visionModel : config.llm.textModel;
 export const dbEnabled = () => Boolean(config.db.url);
 export const mailEnabled = () => Boolean(config.mail.brevoKey || config.mail.smtpUrl);
+export const payEnabled = () => Boolean(config.xunhu.appid && config.xunhu.appsecret);
+
+// 充值档位：key -> { credits 增加次数, fee 元, label, price, badge }
+export const TIERS = {
+  t50: { credits: 50, fee: '5', label: '50 次', price: '¥5' },
+  t120: { credits: 120, fee: '10', label: '120 次', price: '¥10', badge: '入门' },
+  t300: { credits: 300, fee: '20', label: '300 次', price: '¥20', badge: '最划算' },
+};
