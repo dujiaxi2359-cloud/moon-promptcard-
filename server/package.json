@@ -1,0 +1,18 @@
+{
+  "name": "moon-promptcard-server",
+  "version": "0.1.0",
+  "description": "Moon PromptCard 参考后端：邮箱登录、配额、提示词分析（Gemini）、图片生成。仅供本地/自部署参考。",
+  "private": true,
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "nodemailer": "^6.9.16",
+    "pg": "^8.13.1"
+  }
+}
