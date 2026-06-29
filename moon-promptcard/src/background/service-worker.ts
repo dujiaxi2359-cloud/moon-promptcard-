@@ -8,6 +8,7 @@ import {
   builtinAnalyze,
   builtinCheckoutUrl,
   builtinDescribeImage,
+  builtinGoogleLogin,
   builtinLogout,
   builtinMe,
   builtinQuota,
@@ -118,6 +119,15 @@ chrome.runtime.onMessage.addListener((message: RuntimeMessage, _sender, sendResp
       case 'AUTH_VERIFY':
         try {
           const { token, account } = await builtinVerifyCode(message.email, message.code);
+          await saveSettings({ builtin: { token, account } });
+          sendResponse({ ok: true, account });
+        } catch (e) {
+          sendResponse({ ok: false, error: errMsg(e) });
+        }
+        break;
+      case 'AUTH_GOOGLE':
+        try {
+          const { token, account } = await builtinGoogleLogin(message.accessToken);
           await saveSettings({ builtin: { token, account } });
           sendResponse({ ok: true, account });
         } catch (e) {

@@ -11,11 +11,11 @@ const KEYS = {
 } as const;
 
 export const DEFAULT_CUSTOM_API = {
-  baseUrl: '',
+  baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
   apiKey: '',
   model: 'qwen-vl-plus',
-  imageModel: 'gpt-image-2',
-  editModel: 'nanobanana-2',
+  imageModel: '',
+  editModel: '',
   imageSize: '1024x1024',
   imageCount: 1,
 };

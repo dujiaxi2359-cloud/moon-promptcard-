@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AnalysisResult, CustomApiConfig, ImagePrompt, ServiceMode, Settings } from '@/lib/types';
 import { getLastResult, getSettings, saveSettings } from '@/lib/storage';
+import { GOOGLE_CLIENT_ID } from '@/lib/api';
 import { t } from '@/lib/i18n';
 import { Button, IconButton, LoadingDots, SegmentToggle, Spinner, StateBlock } from '@/components/ui';
 import { ResultBody } from '@/components/ResultBody';
@@ -10,6 +11,7 @@ import {
   CopyIcon,
   DownloadIcon,
   EyeIcon,
+  GoogleIcon,
   EyeOffIcon,
   HistoryIcon,
   ImageIcon,
@@ -459,14 +461,66 @@ function LoginPanel({
     });
   };
 
+  const googleLogin = () => {
+    if (!GOOGLE_CLIENT_ID) {
+      showToast(zh ? '尚未配置 Google 登录' : 'Google login not configured');
+      return;
+    }
+    const redirect = chrome.identity.getRedirectURL();
+    const url =
+      'https://accounts.google.com/o/oauth2/v2/auth?client_id=' +
+      encodeURIComponent(GOOGLE_CLIENT_ID) +
+      '&response_type=token&redirect_uri=' +
+      encodeURIComponent(redirect) +
+      '&scope=' +
+      encodeURIComponent('openid email profile') +
+      '&prompt=select_account';
+    setBusy(true);
+    chrome.identity.launchWebAuthFlow({ url, interactive: true }, (redirectedTo) => {
+      if (chrome.runtime.lastError || !redirectedTo) {
+        setBusy(false);
+        showToast(zh ? 'Google 登录已取消' : 'Google sign-in cancelled');
+        return;
+      }
+      const m = redirectedTo.match(/[#&]access_token=([^&]+)/);
+      if (!m) {
+        setBusy(false);
+        showToast(zh ? '未获取到 Google 令牌' : 'No Google token');
+        return;
+      }
+      chrome.runtime.sendMessage(
+        { type: 'AUTH_GOOGLE', accessToken: decodeURIComponent(m[1]) },
+        (r) => {
+          setBusy(false);
+          if (r?.ok) onAuthed();
+          else showToast(r?.error ?? (zh ? '登录失败' : 'Failed'));
+        },
+      );
+    });
+  };
+
   return (
     <div className="mpc-card space-y-3 p-4">
       <div>
         <h3 className="text-[15px] font-semibold text-paper">{zh ? '登录内置服务' : 'Sign in'}</h3>
         <p className="mt-1 text-[12px] leading-relaxed text-paper/45">
-          {zh ? '用邮箱验证码登录，即可使用内置提示词分析与图片转提示词。' : 'Email-code sign-in to use built-in analysis.'}
+          {zh ? '登录后即可使用内置提示词分析与图片转提示词。' : 'Sign in to use built-in analysis.'}
         </p>
       </div>
+
+      <button
+        onClick={googleLogin}
+        disabled={busy}
+        className="flex h-[46px] w-full items-center justify-center gap-2.5 rounded-2xl bg-paper text-[14px] font-medium text-[#15161A] transition hover:brightness-95 active:scale-[0.99] disabled:opacity-60"
+      >
+        <GoogleIcon /> {zh ? '用 Google 登录' : 'Sign in with Google'}
+      </button>
+      <div className="flex items-center gap-2 text-[11px] text-paper/35">
+        <span className="h-px flex-1 bg-line" />
+        {zh ? '或用邮箱验证码' : 'or email code'}
+        <span className="h-px flex-1 bg-line" />
+      </div>
+
       <input
         value={email}
         onChange={(e) => setEmail(e.target.value)}

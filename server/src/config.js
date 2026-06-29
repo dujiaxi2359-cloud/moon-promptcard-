@@ -53,7 +53,7 @@ export const config = {
     model: env.IMAGE_MODEL || 'gpt-image-2', // text-to-image  -> /images/generations
     editModel: env.IMAGE_EDIT_MODEL || 'nanobanana-2', // image-to-image -> /images/edits
   },
-  freeQuota: Number(env.FREE_QUOTA) || 20,
+  freeQuota: Number(env.FREE_QUOTA) || 5,
   checkoutUrl: env.CHECKOUT_URL || 'https://example.com/moon-promptcard/checkout',
   db: {
     // Postgres connection string (Render/Railway provide DATABASE_URL).

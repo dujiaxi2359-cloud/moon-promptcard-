@@ -31,7 +31,7 @@
       "run_at": "document_idle"
     }
   ],
-  "permissions": ["storage", "activeTab", "scripting", "contextMenus"],
+  "permissions": ["storage", "activeTab", "scripting", "contextMenus", "identity"],
   "host_permissions": ["http://*/*", "https://*/*"],
   "web_accessible_resources": [
     {

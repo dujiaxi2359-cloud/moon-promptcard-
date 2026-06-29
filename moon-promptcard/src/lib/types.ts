@@ -83,6 +83,7 @@ export type RuntimeMessage =
   | { type: 'IMAGE_TO_IMAGE'; prompt: string; refImage: string; mode?: 'single' | 'mix'; size?: string }
   | { type: 'AUTH_REQUEST'; email: string }
   | { type: 'AUTH_VERIFY'; email: string; code: string }
+  | { type: 'AUTH_GOOGLE'; accessToken: string }
   | { type: 'LOGOUT' }
   | { type: 'GET_QUOTA' }
   | { type: 'GET_ME' }

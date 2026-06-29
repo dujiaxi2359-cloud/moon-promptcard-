@@ -7,7 +7,6 @@ import { ChevronLeftIcon, EyeIcon, EyeOffIcon, MoonIcon, RefreshIcon } from '@/c
 
 const GATEWAYS: { label: string; baseUrl: string }[] = [
   { label: '千问 DashScope', baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1' },
-  { label: 'AI充电站 (aidraw365)', baseUrl: 'https://aidraw365.com/v1' },
   { label: '自定义', baseUrl: '' },
 ];
 
@@ -134,10 +133,10 @@ export function Options() {
         {/* 图片模型 */}
         <Section title={zh ? '图片模型' : 'Image models'} desc={zh ? '文生图走 /images/generations，图生图走 /images/edits。' : 'Text-to-image and image-to-image endpoints.'}>
           <Field label={zh ? '文生图模型' : 'Text-to-image'}>
-            <input list="mpc-models" value={draft.imageModel} onChange={(e) => setField({ imageModel: e.target.value })} placeholder="gpt-image-2" className="mpc-input" spellCheck={false} />
+            <input list="mpc-models" value={draft.imageModel} onChange={(e) => setField({ imageModel: e.target.value })} placeholder={zh ? '你的文生图模型名' : 'your text-to-image model'} className="mpc-input" spellCheck={false} />
           </Field>
           <Field label={zh ? '图生图模型' : 'Image-to-image'}>
-            <input list="mpc-models" value={draft.editModel} onChange={(e) => setField({ editModel: e.target.value })} placeholder="nanobanana-2" className="mpc-input" spellCheck={false} />
+            <input list="mpc-models" value={draft.editModel} onChange={(e) => setField({ editModel: e.target.value })} placeholder={zh ? '你的图生图模型名' : 'your image-to-image model'} className="mpc-input" spellCheck={false} />
           </Field>
         </Section>
 

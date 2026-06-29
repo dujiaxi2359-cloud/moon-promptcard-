@@ -21,7 +21,8 @@ import { requestCode, verifyCode, logout } from './auth.js';
 import { bearer } from './middleware.js';
 import { analyze, describeImage } from './analyze.js';
 import { generateImages } from './image.js';
-import { initDb, decrementQuota } from './db.js';
+import { initDb, decrementQuota, getOrCreateUser } from './db.js';
+import { signToken } from './token.js';
 
 const app = express();
 app.use(express.json({ limit: '256kb' }));
@@ -49,6 +50,32 @@ app.get('/api/health', (_req, res) =>
 app.post('/api/auth/request', wrap(requestCode));
 app.post('/api/auth/verify', wrap(verifyCode));
 app.post('/api/auth/logout', bearer(false), wrap(logout));
+
+// Google one-click login: client sends a Google access token; we verify it with
+// Google's userinfo endpoint, then issue our own session token.
+app.post(
+  '/api/auth/google',
+  wrap(async (req, res) => {
+    const accessToken = String(req.body?.accessToken || '');
+    if (!accessToken) return res.status(400).json({ ok: false, error: '缺少 Google 令牌。' });
+    let info;
+    try {
+      const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (!r.ok) return res.status(401).json({ ok: false, error: 'Google 登录校验失败。' });
+      info = await r.json();
+    } catch {
+      return res.status(502).json({ ok: false, error: '无法连接 Google 校验服务。' });
+    }
+    const email = String(info?.email || '').toLowerCase();
+    if (!email || info.email_verified === false) {
+      return res.status(401).json({ ok: false, error: 'Google 账号无有效邮箱。' });
+    }
+    const user = await getOrCreateUser(email);
+    res.json({ ok: true, token: signToken(email), account: user.account });
+  }),
+);
 
 // ── account / quota ───────────────────────────────────────────────────
 app.get(

@@ -19,7 +19,7 @@ services:
       - key: LLM_VISION_MODEL
         value: qwen-vl-plus
       - key: FREE_QUOTA
-        value: "20"
+        value: "5"
       - key: NODE_ENV
         value: production
       - key: DATABASE_URL

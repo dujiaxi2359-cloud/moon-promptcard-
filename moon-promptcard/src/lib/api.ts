@@ -23,6 +23,11 @@ import { buildAnalysisMessages, heuristicAnalyze } from './promptAnalyzer';
 export const BUILTIN_API_BASE_URL = 'https://moon-promptcard-server.onrender.com';
 const USE_MOCK_BUILTIN = false;
 
+// Google OAuth Web client ID (fill after creating it in Google Cloud Console).
+// Authorized redirect URI must be chrome.identity.getRedirectURL() of the
+// extension, i.e. https://<extension-id>.chromiumapp.org/
+export const GOOGLE_CLIENT_ID = '';
+
 class FriendlyError extends Error {}
 
 function friendly(message: string): never {
@@ -444,6 +449,18 @@ export async function builtinVerifyCode(
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, code }),
+  });
+  return { token: d.token, account: d.account };
+}
+
+export async function builtinGoogleLogin(
+  accessToken: string,
+): Promise<{ token: string; account: string }> {
+  if (useMock()) return { token: 'mock-token', account: 'google-user' };
+  const d = await builtinJson('/api/auth/google', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ accessToken }),
   });
   return { token: d.token, account: d.account };
 }
