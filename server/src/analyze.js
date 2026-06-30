@@ -127,9 +127,20 @@ export async function describeImage(image, lang = 'zh') {
     throw err;
   }
   const sys =
-    'You are an expert AIGC prompt writer. Look at the image and write a single, ' +
-    'detailed, directly-usable generation prompt (subject, scene, composition, lighting, ' +
-    'style, color, camera). Return ONLY JSON {"zh": string, "en": string}. No markdown.';
+    'You are an elite AIGC reverse-prompt engineer. Study the image VERY carefully, then write ' +
+    'ONE precise, ready-to-paste text-to-image prompt that would faithfully reproduce it. ' +
+    'Structure it as rich, comma-separated descriptors (the way pro Midjourney / Stable ' +
+    'Diffusion users write), ordered as: [main subject + concrete attributes: appearance, ' +
+    'pose, clothing, expression] , [secondary elements] , [scene / background] , [composition ' +
+    '& framing] , [camera: angle, shot type, lens / focal length] , [lighting: type, direction, ' +
+    'intensity] , [exact color palette] , [art style / medium / render: e.g. product ' +
+    'photography, octane 3D render, cinematic film still, flat illustration, anime, poster ' +
+    'design] , [mood / atmosphere] , [quality boosters: e.g. ultra-detailed, sharp focus, 8k, ' +
+    'high dynamic range] , [aspect ratio if obvious]. If there is visible text in the image, ' +
+    'quote it EXACTLY in quotes. Rules: be concrete and faithful — only what is actually ' +
+    'visible, never invent; no vague words like "beautiful/amazing"; do NOT write a narrative ' +
+    'sentence, write descriptor phrases. Return ONLY JSON {"zh": string, "en": string} — zh is ' +
+    'the Chinese version, en the English version, each a single ready-to-paste line. No markdown.';
   let res;
   try {
     res = await fetch(`${config.llm.baseUrl}/chat/completions`, {

@@ -66,6 +66,10 @@ export function FloatingApp() {
       if (msg?.type === 'IMAGE_TO_PROMPT_SRC' && msg.src) {
         extractPrompt(msg.src);
       }
+      if (msg?.type === 'ANALYZE_EDITABLE') {
+        const { text } = readPromptSource();
+        runAnalyze(text);
+      }
     };
     chrome.runtime.onMessage.addListener(handler);
     return () => chrome.runtime.onMessage.removeListener(handler);
@@ -284,38 +288,83 @@ function FloatingBar({
   onAnalyze: () => void;
   onClose: () => void;
 }) {
+  const [collapsed, setCollapsed] = useState(false);
+  const [pos, setPos] = useState({ x: 20, y: typeof window !== 'undefined' ? window.innerHeight - 96 : 600 });
+  const drag = useRef<{ dx: number; dy: number; moved: boolean } | null>(null);
+  const zh = lang === 'zh';
+  const shadow = '0 22px 60px -16px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.14)';
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      if (!drag.current) return;
+      drag.current.moved = true;
+      setPos({
+        x: Math.max(8, Math.min(window.innerWidth - 90, e.clientX - drag.current.dx)),
+        y: Math.max(8, Math.min(window.innerHeight - 60, e.clientY - drag.current.dy)),
+      });
+    };
+    const onUp = () => (drag.current = null);
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+  }, []);
+
+  const startDrag = (e: React.MouseEvent) => {
+    drag.current = { dx: e.clientX - pos.x, dy: e.clientY - pos.y, moved: false };
+  };
+
+  if (collapsed) {
+    return (
+      <div className="z-[2147483647] fixed" style={{ left: pos.x, top: pos.y, fontFamily: 'inherit' }}>
+        <button
+          onMouseDown={startDrag}
+          onClick={() => !drag.current?.moved && setCollapsed(false)}
+          className="relative flex h-14 w-14 cursor-grab items-center justify-center rounded-full border border-white/15 bg-[rgba(16,17,20,0.85)] text-paper backdrop-blur-xl transition hover:brightness-110 active:cursor-grabbing"
+          style={{ boxShadow: shadow }}
+          aria-label={zh ? '展开悬浮分析' : 'Expand'}
+        >
+          <MoonIcon className="h-6 w-6" />
+          {enabled && (
+            <span className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full bg-brand shadow-[0_0_8px_rgba(255,90,31,0.9)]" />
+          )}
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <div
-      className="fixed left-3 top-1/2 z-[2147483647] -translate-y-1/2"
-      style={{ fontFamily: 'inherit' }}
-    >
+    <div className="z-[2147483647] fixed" style={{ left: pos.x, top: pos.y, fontFamily: 'inherit' }}>
       <div
-        className="flex flex-col items-center gap-2 rounded-full border border-white/15 bg-[rgba(16,17,20,0.74)] p-2 backdrop-blur-xl"
-        style={{
-          boxShadow:
-            '0 18px 44px -14px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.12)',
-        }}
+        className="flex items-center gap-2.5 rounded-[20px] border border-white/15 bg-[rgba(16,17,20,0.85)] py-2 pl-2.5 pr-2 backdrop-blur-2xl"
+        style={{ boxShadow: shadow }}
       >
-        <div className="relative flex h-7 w-7 items-center justify-center rounded-full border border-line-strong bg-card text-paper">
-          <MoonIcon className="h-3.5 w-3.5" />
-          <span className="absolute right-0 top-0 h-1.5 w-1.5 rounded-full bg-brand shadow-[0_0_6px_rgba(255,90,31,0.9)]" />
+        {/* drag handle: logo + label */}
+        <div onMouseDown={startDrag} className="flex cursor-grab items-center gap-2.5 pr-1 active:cursor-grabbing select-none">
+          <div className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-line-strong bg-card text-paper">
+            <MoonIcon className="h-[18px] w-[18px]" />
+            <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-brand shadow-[0_0_6px_rgba(255,90,31,0.9)]" />
+          </div>
+          <span className="text-[14px] font-semibold tracking-tight text-white/90">
+            {zh ? '悬浮与分析' : 'Float & analyze'}
+          </span>
         </div>
 
+        {/* toggle switch */}
         <button
           role="switch"
           aria-checked={enabled}
-          aria-label={t(lang, 'floatingAnalyze')}
           onClick={() => onToggle(!enabled)}
-          className={`relative h-6 w-6 rounded-full transition-colors ${
-            enabled
-              ? 'bg-brand shadow-[0_2px_8px_-2px_rgba(255,106,0,0.6)]'
-              : 'bg-white/15 hover:bg-white/25'
+          className={`relative h-7 w-[52px] shrink-0 rounded-full transition-colors ${
+            enabled ? 'bg-brand shadow-[0_2px_10px_-2px_rgba(255,90,31,0.7)]' : 'bg-white/20'
           }`}
           title={t(lang, 'floatingAnalyze')}
         >
           <span
-            className={`absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full transition ${
-              enabled ? 'bg-white' : 'bg-white/60'
+            className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.4)] transition-all duration-200 ${
+              enabled ? 'left-[26px]' : 'left-1'
             }`}
           />
         </button>
@@ -323,21 +372,30 @@ function FloatingBar({
         {enabled && (
           <button
             onClick={onAnalyze}
-            className="mpc-glow-btn flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-b from-brand-bright to-brand-deep text-white shadow-ember transition hover:brightness-[1.07] active:scale-95"
+            className="mpc-glow-btn flex h-9 items-center gap-1.5 rounded-xl bg-gradient-to-b from-brand-bright to-brand-deep px-3.5 text-[13px] font-medium text-white shadow-ember transition hover:brightness-[1.07] active:scale-95"
             title={hasSelection ? t(lang, 'analyzeSelection') : t(lang, 'analyzeInput')}
-            aria-label={hasSelection ? t(lang, 'analyzeSelection') : t(lang, 'analyzeInput')}
           >
             <SparkIcon className="h-4 w-4" />
+            {hasSelection ? (zh ? '分析选中' : 'Selection') : zh ? '分析' : 'Analyze'}
           </button>
         )}
 
         <button
           onClick={onClose}
-          className="flex h-6 w-6 items-center justify-center rounded-full text-white/40 transition hover:bg-white/10 hover:text-white/80"
+          className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-500/85 text-white transition hover:bg-red-500 active:scale-95"
           aria-label={t(lang, 'close')}
           title={t(lang, 'close')}
         >
-          <CloseIcon className="h-3.5 w-3.5" />
+          <CloseIcon className="h-[18px] w-[18px]" />
+        </button>
+
+        <button
+          onClick={() => setCollapsed(true)}
+          className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-white/70 transition hover:bg-white/20 hover:text-white active:scale-95"
+          aria-label={t(lang, 'collapse')}
+          title={t(lang, 'collapse')}
+        >
+          <ChevronDownIcon className="h-[18px] w-[18px]" />
         </button>
       </div>
     </div>

@@ -36,6 +36,7 @@
     "client_id": "953512361686-rmec8r96jokkupi74i9kn2vkio3o6tbq.apps.googleusercontent.com",
     "scopes": ["openid", "email", "profile"]
   },
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAmH00/g4EpKUGeLDP8b2GnIuV23xjPLPGJDTrAE9Z+x3jDOtXN+gXsAA5IE54mpU5nZaTuCd/lGNBwk9OJixLgknTA3kgLZClgHurDyM3QMB0Fp0VCuJY/Ui2nOzu4dJ8jI290G3oJ72Him2uajlU9mZHj1352BmGUabyMxMQ0Z2/+46NgG1btkmGYtmuu9kdYVGlCMeQ95llGFrZpdKBhTLfYgiJNMpN2fUEDyhm9zMRKi9keNsD3oopFhRP+I8G5n4UL+YpUfYnQsTk7I9D+6Ao0SVjsjynqJmnehk08XhgybSDrpwlGSVhFf+fPYc/oxP7/lj70ahr79ixbY6KywIDAQAB",
   "host_permissions": ["http://*/*", "https://*/*"],
   "web_accessible_resources": [
     {

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AnalysisResult, CustomApiConfig, ImagePrompt, ServiceMode, Settings } from '@/lib/types';
-import { getLastResult, getSettings, saveSettings } from '@/lib/storage';
+import { getLastResult, getSettings, saveSettings, getHistory, clearHistory, deleteHistoryItem } from '@/lib/storage';
 import { t } from '@/lib/i18n';
 import { Button, IconButton, LoadingDots, SegmentToggle, Spinner, StateBlock } from '@/components/ui';
 import { ResultBody } from '@/components/ResultBody';
@@ -20,7 +20,7 @@ import {
   SparkIcon,
 } from '@/components/icons';
 
-type View = 'home' | 'result' | 'generate' | 'extract' | 'buy';
+type View = 'home' | 'result' | 'generate' | 'extract' | 'buy' | 'history';
 
 export function Popup() {
   const [settings, setSettings] = useState<Settings | null>(null);
@@ -109,7 +109,7 @@ export function Popup() {
         lang={lang}
         account={account}
         onGenerate={() => setView('generate')}
-        onHistory={() => setView('result')}
+        onHistory={() => setView('history')}
         onRefresh={refresh}
         onSettings={() => chrome.runtime.openOptionsPage()}
       />
@@ -129,6 +129,15 @@ export function Popup() {
             onUploadImage={uploadImage}
             onRefresh={refresh}
             showToast={showToast}
+          />
+        ) : view === 'history' ? (
+          <HistoryView
+            lang={lang}
+            onBack={() => setView('home')}
+            onOpen={(r) => {
+              setLast(r);
+              setView('result');
+            }}
           />
         ) : view === 'buy' ? (
           <BuyView lang={lang} onBack={() => setView('home')} onRefresh={refresh} showToast={showToast} />
@@ -892,6 +901,82 @@ function BuyView({
       <button onClick={onRefresh} className="mx-auto block text-[12px] text-brand hover:underline">
         {zh ? '已支付，刷新次数' : 'Paid — refresh balance'}
       </button>
+    </div>
+  );
+}
+
+function HistoryView({
+  lang,
+  onBack,
+  onOpen,
+}: {
+  lang: 'zh' | 'en';
+  onBack: () => void;
+  onOpen: (r: AnalysisResult) => void;
+}) {
+  const zh = lang === 'zh';
+  const [items, setItems] = useState<AnalysisResult[]>([]);
+  useEffect(() => {
+    getHistory().then(setItems);
+  }, []);
+
+  const removeOne = async (createdAt: string) => {
+    await deleteHistoryItem(createdAt);
+    setItems(await getHistory());
+  };
+  const clearAll = async () => {
+    await clearHistory();
+    setItems([]);
+  };
+  const fmt = (iso: string) => {
+    const d = new Date(iso);
+    return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <button onClick={onBack} className="flex items-center gap-1 text-[12px] text-paper/50 hover:text-paper/80">
+          <ChevronDownIcon className="rotate-90" /> {t(lang, 'history')}
+        </button>
+        {items.length > 0 && (
+          <button onClick={clearAll} className="text-[11px] text-paper/40 hover:text-red-300">
+            {zh ? '清空' : 'Clear'}
+          </button>
+        )}
+      </div>
+
+      {items.length === 0 ? (
+        <div className="mpc-card flex flex-col items-center p-7 text-center">
+          <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-brand/12 text-brand">
+            <HistoryIcon className="h-5 w-5" />
+          </div>
+          <p className="text-[13px] leading-relaxed text-paper/55">
+            {zh ? '还没有历史记录。运行一次提示词分析后会自动出现在这里。' : 'No history yet. Run an analysis to populate it.'}
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {items.map((r) => (
+            <div key={r.createdAt} className="group flex items-center gap-3 rounded-2xl border border-line bg-white/[0.03] p-3 transition hover:border-line-strong">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand/12 text-[13px] font-bold tabular-nums text-brand">
+                {r.tags?.includes('图片转提示词') ? <ImageIcon className="h-4 w-4" /> : r.score}
+              </span>
+              <button onClick={() => onOpen(r)} className="min-w-0 flex-1 text-left">
+                <p className="truncate text-[13px] text-paper/85">{r.summary || r.source}</p>
+                <p className="text-[11px] text-paper/40">{r.level} · {fmt(r.createdAt)}</p>
+              </button>
+              <button
+                onClick={() => removeOne(r.createdAt)}
+                className="flex h-7 w-7 items-center justify-center rounded-lg text-paper/30 opacity-0 transition hover:bg-white/10 hover:text-paper/70 group-hover:opacity-100"
+                aria-label={zh ? '删除' : 'Delete'}
+              >
+                <CloseIcon className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

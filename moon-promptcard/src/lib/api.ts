@@ -254,10 +254,16 @@ export async function imageToPrompt(
   if (!config.model) friendly('请先在设置中心填写 Chat 模型。');
 
   const sys =
-    'You are an expert AIGC prompt writer. Look at the image and write a single, ' +
-    'detailed, directly-usable generation prompt describing subject, scene, composition, ' +
-    'lighting, style, color and camera. Return ONLY JSON: {"zh": string, "en": string} ' +
-    'where zh is Chinese and en is English. No markdown, no commentary.';
+    'You are an elite AIGC reverse-prompt engineer. Study the image carefully, then write ONE ' +
+    'precise, ready-to-paste text-to-image prompt that would faithfully reproduce it, as rich ' +
+    'comma-separated descriptors (pro Midjourney / Stable Diffusion style), ordered: ' +
+    '[main subject + concrete attributes] , [secondary elements] , [scene/background] , ' +
+    '[composition & framing] , [camera: angle, shot, lens] , [lighting: type/direction] , ' +
+    '[exact color palette] , [art style / medium / render] , [mood] , [quality boosters: ' +
+    'ultra-detailed, sharp focus, 8k] , [aspect ratio if obvious]. Quote any visible text ' +
+    'EXACTLY. Be concrete and faithful — only what is visible, never invent; no vague words; ' +
+    'descriptor phrases, NOT a narrative sentence. Return ONLY JSON {"zh": string, "en": string}, ' +
+    'each a single ready-to-paste line. No markdown.';
 
   let res: Response;
   try {

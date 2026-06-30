@@ -87,6 +87,11 @@ export async function clearHistory(): Promise<void> {
   await area().set({ [KEYS.history]: [], [KEYS.lastResult]: null });
 }
 
+export async function deleteHistoryItem(createdAt: string): Promise<void> {
+  const history = await getHistory();
+  await area().set({ [KEYS.history]: history.filter((h) => h.createdAt !== createdAt) });
+}
+
 export function onSettingsChanged(cb: (s: Settings) => void): () => void {
   const listener = (
     changes: { [k: string]: chrome.storage.StorageChange },

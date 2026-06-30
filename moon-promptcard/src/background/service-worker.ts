@@ -26,26 +26,40 @@ import {
 import { getSettings, saveSettings, setLastResult } from '@/lib/storage';
 import type { RuntimeMessage } from '@/lib/types';
 
-const MENU_SELECTION = 'mpc-analyze-selection';
+const MENU_ANALYZE = 'mpc-analyze';
 const MENU_IMAGE = 'mpc-image-to-prompt';
 
-chrome.runtime.onInstalled.addListener(() => {
-  chrome.contextMenus.create({
-    id: MENU_SELECTION,
-    title: '用 Moon PromptCard 分析选中文本',
-    contexts: ['selection'],
+function setupMenus() {
+  // removeAll first so re-creation never hits a duplicate-id error.
+  chrome.contextMenus.removeAll(() => {
+    // Always available on any right-click (page/selection/input) — like the competitor.
+    chrome.contextMenus.create({
+      id: MENU_ANALYZE,
+      title: 'Moon PromptCard：分析提示词（选中或输入框）',
+      contexts: ['all'],
+    });
+    // Image-specific entry, shows additionally when right-clicking an image.
+    chrome.contextMenus.create({
+      id: MENU_IMAGE,
+      title: 'Moon PromptCard：图片转提示词',
+      contexts: ['image'],
+    });
   });
-  chrome.contextMenus.create({
-    id: MENU_IMAGE,
-    title: '用 Moon PromptCard 把图片转成提示词',
-    contexts: ['image'],
-  });
-});
+}
+
+// Create on install/update AND on every service-worker startup, so the menus
+// survive reloads and SW sleep/wake.
+chrome.runtime.onInstalled.addListener(setupMenus);
+setupMenus();
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (!tab?.id) return;
-  if (info.menuItemId === MENU_SELECTION && info.selectionText) {
-    chrome.tabs.sendMessage(tab.id, { type: 'ANALYZE_SELECTION', text: info.selectionText });
+  if (info.menuItemId === MENU_ANALYZE) {
+    if (info.selectionText) {
+      chrome.tabs.sendMessage(tab.id, { type: 'ANALYZE_SELECTION', text: info.selectionText });
+    } else {
+      chrome.tabs.sendMessage(tab.id, { type: 'ANALYZE_EDITABLE' });
+    }
   }
   if (info.menuItemId === MENU_IMAGE && info.srcUrl) {
     chrome.tabs.sendMessage(tab.id, { type: 'IMAGE_TO_PROMPT_SRC', src: info.srcUrl });
@@ -77,6 +91,19 @@ async function handleImageToPrompt(image: string) {
       settings.serviceMode === 'custom'
         ? await imageToPrompt(image, settings.customApi, settings.lang)
         : await builtinDescribeImage(image, settings.lang, settings.builtin.token);
+    // Save into the unified history so image→prompt results are browsable too.
+    await setLastResult({
+      score: 0,
+      level: '图片转提示词',
+      summary: (prompt.zh || prompt.en || '').slice(0, 70),
+      issues: [],
+      suggestions: [],
+      optimizedPrompt: [prompt.zh, prompt.en].filter(Boolean).join('\n\n'),
+      negativePrompt: '',
+      tags: ['图片转提示词'],
+      createdAt: new Date().toISOString(),
+      source: '图片转提示词',
+    });
     return { ok: true, prompt };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : '图片转提示词失败。' };
